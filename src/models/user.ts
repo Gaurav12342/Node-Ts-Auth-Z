@@ -14,6 +14,6 @@ const userModal = new mongoose.Schema(
   { collection: "auth-user", timestamps: true, minimize: false }
 );
 
-const authUser = mongoose.model("Auth-User",userModal);
+export const authUser = mongoose.model("Auth-User",userModal);
 
-module.exports = authUser;
+// module.exports = authUser;
