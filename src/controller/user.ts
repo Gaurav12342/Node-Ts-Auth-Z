@@ -1,6 +1,7 @@
 import express,{ Express,Request,Response } from "express";
 import bcrypt from 'bcrypt';
 import { signUpService } from "../service/user";
+import { authUser } from "../models/user";
 
 export const signIn = (req:Request,res:Response)=>{
   const { name, email, password } = req?.body;
@@ -28,6 +29,7 @@ export const signIn = (req:Request,res:Response)=>{
     });
   }
 
+  
   return res.status(201).json({
       status: "OK",
       statusCode:201,
@@ -69,20 +71,30 @@ export const signUp = async (req: Request, res: Response) => {
     email,
     password: hashPassword,
   };
+  const isEmail = await authUser.findOne({email}).exec();
+  
   signUpService(obj)
     .then((result) => {
-      return res.status(201).json({
-        status: "Created",
-        statusCode: 201,
-        message: "Created",
-        data: result,
-      });
+      if (isEmail) {
+        return res.status(400).json({
+          status: "Error",
+          statusCode: 400,
+          error: result,
+        });
+      } else {
+        return res.status(201).json({
+          status: "Created",
+          statusCode: 201,
+          message: "Created",
+          data: result,
+        });
+      }
     })
     .catch((error) => {
       return res.status(500).json({
         status: "Server error",
         statusCode: 500,
-        error
+        error,
       });
     });
 };
