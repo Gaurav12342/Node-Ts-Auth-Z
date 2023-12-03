@@ -4,6 +4,7 @@ import { signInService, signUpService } from "../service/user";
 import { authUser } from "../models/user";
 import { RefreshToken } from "../models/refreshToken";
 import { generateToken } from "../utils/generateToken";
+import jwt from 'jsonwebtoken';
 
 export const signIn = (req: Request, res: Response) => {
   const { email, password } = req?.body;
@@ -116,9 +117,27 @@ export const signUp = async (req: Request, res: Response) => {
 };
 
 export const getUserDetail = async (req: Request, res: Response) => {
-  const userToken = req["headers"]["authorization"]
-    ?.replace("Bearer", "")
-    .trim();
-  const isCheckToken = RefreshToken.findOne();
-  console.log("Result body", userToken);
+  const userToken: any = req["headers"]["authorization"]
+  ?.replace("Bearer", "")
+  .trim();
+  const accessTokenKey: any = process.env.ACCESSTOKENKEY;
+  if(accessTokenKey){
+    jwt.verify(userToken
+      ,accessTokenKey,(err:any,detail:any)=>{
+        if (err) {
+          return res.status(500).json({
+            status: "error",
+            statusCode: 500,
+            err,
+          });
+        }
+
+        return res.status(200).json({
+          status: "OK",
+          statusCode: 200,
+          message: "User detail get successfully.",
+          data: detail,
+        });
+    });
+  }
 };

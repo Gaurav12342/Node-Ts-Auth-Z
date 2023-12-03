@@ -13,7 +13,7 @@ export const generateToken = async (
   if (Boolean(isPasswordMatch)) {
     const accessTokenKey: any = process.env.ACCESSTOKENKEY;
     const accessToken = await jwt.sign(newObj, accessTokenKey, {
-      expiresIn: 30,
+      expiresIn: 50,
     });
     const refreshTokenKey: any = process.env.REFRESHTOKENKEY;
     const refreshToken = await jwt.sign(newObj, refreshTokenKey, {

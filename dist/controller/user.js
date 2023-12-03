@@ -16,8 +16,8 @@ exports.getUserDetail = exports.signUp = exports.signIn = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const user_1 = require("../service/user");
 const user_2 = require("../models/user");
-const refreshToken_1 = require("../models/refreshToken");
 const generateToken_1 = require("../utils/generateToken");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const signIn = (req, res) => {
     const { email, password } = req === null || req === void 0 ? void 0 : req.body;
     if (!email) {
@@ -119,7 +119,23 @@ exports.signUp = signUp;
 const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userToken = (_a = req["headers"]["authorization"]) === null || _a === void 0 ? void 0 : _a.replace("Bearer", "").trim();
-    const isCheckToken = refreshToken_1.RefreshToken.findOne();
-    console.log("Result body", userToken);
+    const accessTokenKey = process.env.ACCESSTOKENKEY;
+    if (accessTokenKey) {
+        jsonwebtoken_1.default.verify(userToken, accessTokenKey, (err, detail) => {
+            if (err) {
+                return res.status(500).json({
+                    status: "error",
+                    statusCode: 500,
+                    err,
+                });
+            }
+            return res.status(200).json({
+                status: "OK",
+                statusCode: 200,
+                message: "User detail get successfully.",
+                data: detail,
+            });
+        });
+    }
 });
 exports.getUserDetail = getUserDetail;

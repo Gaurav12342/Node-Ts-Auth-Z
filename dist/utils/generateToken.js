@@ -23,7 +23,7 @@ const generateToken = (password, hashPassword, userDetail) => __awaiter(void 0, 
     if (Boolean(isPasswordMatch)) {
         const accessTokenKey = process.env.ACCESSTOKENKEY;
         const accessToken = yield jsonwebtoken_1.default.sign(newObj, accessTokenKey, {
-            expiresIn: 30,
+            expiresIn: 50,
         });
         const refreshTokenKey = process.env.REFRESHTOKENKEY;
         const refreshToken = yield jsonwebtoken_1.default.sign(newObj, refreshTokenKey, {
