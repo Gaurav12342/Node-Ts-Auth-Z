@@ -1,9 +1,9 @@
-import express,{ Express,Request,Response } from "express";
-import bcrypt from 'bcrypt';
+import { Request, Response } from "express";
+import bcrypt from "bcrypt";
 import { signInService, signUpService } from "../service/user";
 import { authUser } from "../models/user";
-import jwt from 'jsonwebtoken';
 import { RefreshToken } from "../models/refreshToken";
+import { generateToken } from "../utils/generateToken";
 
 export const signIn = (req: Request, res: Response) => {
   const { email, password } = req?.body;
@@ -29,62 +29,54 @@ export const signIn = (req: Request, res: Response) => {
   };
   signInService(obj)
     .then(async (response: any) => {
-      if (res) {
-        const isPasswordMatch = await bcrypt.compare(password, response.password);
-        let newObj = { ...response };
-        delete newObj?.password;
-        if (Boolean(isPasswordMatch)) {
-          const accessTokenKey: any = process.env.ACCESSTOKENKEY;
-          const tokenGen = await jwt.sign(newObj, accessTokenKey, {
-            expiresIn: 30,
-          });
+      if (response) {
+        const { accessToken, refreshToken }: any = await generateToken(
+          password,
+          response.password,
+          response
+        );
 
-          const refreshTokenObj = {
-            userId : response?._id,
-            token: tokenGen
-          }
-          await RefreshToken.create(refreshTokenObj);
-          return res.status(201).json({
-            status: "OK",
-            statusCode: 201,
-            token : tokenGen
-          });
-        }
+        return res.status(201).json({
+          status: "OK",
+          statusCode: 201,
+          accessToken,
+          refreshToken,
+        });
       }
     })
-    .catch((error)=>{
+    .catch((error) => {
       return res.status(500).json({
         status: "error",
         statusCode: 500,
-        error
+        error,
       });
     });
-  };
+};
 
 export const signUp = async (req: Request, res: Response) => {
-  const { name, email, password:plainPassword } = req.body;
-  
-  if(!name){
+  const { name, email, password: plainPassword } = req.body;
+
+  if (!name) {
     return res.status(400).json({
       status: "error",
-      statusCode:400,
-      message : "Please enter the name properly."
+      statusCode: 400,
+      message: "Please enter the name properly.",
     });
   }
 
-  if(!email){
+  if (!email) {
     return res.status(400).json({
       status: "error",
-      statusCode:400,
-      message : "Please enter the email."
+      statusCode: 400,
+      message: "Please enter the email.",
     });
   }
 
-  if(!plainPassword){
+  if (!plainPassword) {
     return res.status(400).json({
       status: "error",
-      statusCode:400,
-      message : "Please enter the password."
+      statusCode: 400,
+      message: "Please enter the password.",
     });
   }
 
@@ -95,8 +87,8 @@ export const signUp = async (req: Request, res: Response) => {
     email,
     password: hashPassword,
   };
-  const isEmail = await authUser.findOne({email}).exec();
-  
+  const isEmail = await authUser.findOne({ email }).exec();
+
   signUpService(obj)
     .then((result) => {
       if (isEmail) {
@@ -123,10 +115,10 @@ export const signUp = async (req: Request, res: Response) => {
     });
 };
 
-export const getUserDetail = async(req: Request, res: Response)=>{
-  const userToken = req['headers']['authorization']?.replace("Bearer","").trim();
+export const getUserDetail = async (req: Request, res: Response) => {
+  const userToken = req["headers"]["authorization"]
+    ?.replace("Bearer", "")
+    .trim();
   const isCheckToken = RefreshToken.findOne();
-  console.log("Result body",userToken)
-
-
-}
+  console.log("Result body", userToken);
+};
