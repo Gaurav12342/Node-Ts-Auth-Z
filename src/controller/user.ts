@@ -1,41 +1,58 @@
 import express,{ Express,Request,Response } from "express";
 import bcrypt from 'bcrypt';
-import { signUpService } from "../service/user";
+import { signInService, signUpService } from "../service/user";
 import { authUser } from "../models/user";
+import jwt from 'jsonwebtoken';
 
-export const signIn = (req:Request,res:Response)=>{
-  const { name, email, password } = req?.body;
-  if(!name){
+export const signIn = (req: Request, res: Response) => {
+  const { email, password } = req?.body;
+  if (!email) {
     return res.status(400).json({
       status: "error",
-      statusCode:400,
-      message : "Please enter the name properly."
+      statusCode: 400,
+      message: "Please enter the email.",
     });
   }
 
-  if(!email){
+  if (!password) {
     return res.status(400).json({
       status: "error",
-      statusCode:400,
-      message : "Please enter the email."
+      statusCode: 400,
+      message: "Please enter the password.",
     });
   }
 
-  if(!password){
-    return res.status(400).json({
-      status: "error",
-      statusCode:400,
-      message : "Please enter the password."
+  const obj = {
+    email,
+    password,
+  };
+  signInService(obj)
+    .then(async (response: any) => {
+      if (res) {
+        const isPasswordMatch = await bcrypt.compare(password, response.password);
+        let newObj = { ...response };
+        delete newObj?.password;
+        if (Boolean(isPasswordMatch)) {
+          const accessTokenKey: any = process.env.ACCESSTOKENKEY;
+          const tokenGen = await jwt.sign(newObj, accessTokenKey, {
+            expiresIn: 30,
+          });
+          return res.status(201).json({
+            status: "OK",
+            statusCode: 201,
+            token : tokenGen
+          });
+        }
+      }
+    })
+    .catch((error)=>{
+      return res.status(500).json({
+        status: "error",
+        statusCode: 500,
+        error
+      });
     });
-  }
-
-  
-  return res.status(201).json({
-      status: "OK",
-      statusCode:201,
-      message : "Success.",
-    });
-}
+  };
 
 export const signUp = async (req: Request, res: Response) => {
   const { name, email, password:plainPassword } = req.body;

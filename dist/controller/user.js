@@ -17,14 +17,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const user_1 = require("../service/user");
 const user_2 = require("../models/user");
 const signIn = (req, res) => {
-    const { name, email, password } = req === null || req === void 0 ? void 0 : req.body;
-    if (!name) {
-        return res.status(400).json({
-            status: "error",
-            statusCode: 400,
-            message: "Please enter the name properly."
-        });
-    }
+    const { email, password } = req === null || req === void 0 ? void 0 : req.body;
     if (!email) {
         return res.status(400).json({
             status: "error",
@@ -39,6 +32,19 @@ const signIn = (req, res) => {
             message: "Please enter the password."
         });
     }
+    const obj = {
+        email, password
+    };
+    (0, user_1.signInService)(obj)
+        .then((res) => __awaiter(void 0, void 0, void 0, function* () {
+        if (res) {
+            const isPasswordMatch = yield bcrypt_1.default.compare(password, res.password);
+            if (Boolean(isPasswordMatch)) {
+                console.log("🚀 ~ file: user.ts:32 ~ .then ~ isPasswordMatch:", isPasswordMatch);
+            }
+        }
+    }))
+        .catch();
     return res.status(201).json({
         status: "OK",
         statusCode: 201,
