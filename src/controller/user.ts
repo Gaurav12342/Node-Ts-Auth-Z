@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { signInService, signUpService } from "../service/user";
 import { authUser } from "../models/user";
 import jwt from 'jsonwebtoken';
+import { RefreshToken } from "../models/refreshToken";
 
 export const signIn = (req: Request, res: Response) => {
   const { email, password } = req?.body;
@@ -37,6 +38,12 @@ export const signIn = (req: Request, res: Response) => {
           const tokenGen = await jwt.sign(newObj, accessTokenKey, {
             expiresIn: 30,
           });
+
+          const refreshTokenObj = {
+            userId : response?._id,
+            token: tokenGen
+          }
+          await RefreshToken.create(refreshTokenObj);
           return res.status(201).json({
             status: "OK",
             statusCode: 201,
@@ -115,3 +122,11 @@ export const signUp = async (req: Request, res: Response) => {
       });
     });
 };
+
+export const getUserDetail = async(req: Request, res: Response)=>{
+  const userToken = req['headers']['authorization']?.replace("Bearer","").trim();
+  const isCheckToken = RefreshToken.findOne();
+  console.log("Result body",userToken)
+
+
+}

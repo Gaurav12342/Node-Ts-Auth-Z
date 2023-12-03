@@ -18,7 +18,10 @@ const signUpService = (data) => __awaiter(void 0, void 0, void 0, function* () {
             return "Email is already exists.";
         }
         const createRes = yield user_1.authUser.create(data);
-        const response = yield user_1.authUser.findById(createRes === null || createRes === void 0 ? void 0 : createRes._id).select("-password").exec();
+        const response = yield user_1.authUser
+            .findById(createRes === null || createRes === void 0 ? void 0 : createRes._id)
+            .select("-password")
+            .exec();
         return response;
     }
     catch (error) {
@@ -29,7 +32,7 @@ exports.signUpService = signUpService;
 const signInService = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const { email } = data;
     try {
-        const response = yield user_1.authUser.findOne({ email }).exec();
+        const response = yield user_1.authUser.findOne({ email }).lean();
         return response;
     }
     catch (error) {
