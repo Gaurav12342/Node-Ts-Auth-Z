@@ -5,6 +5,7 @@ import { authUser } from "../models/user";
 import { RefreshToken } from "../models/refreshToken";
 import { generateToken } from "../utils/generateToken";
 import jwt from 'jsonwebtoken';
+import { useRefreshToken } from "../utils/refreshToken";
 
 export const signIn = (req: Request, res: Response) => {
   const { email, password } = req?.body;
@@ -140,4 +141,24 @@ export const getUserDetail = async (req: Request, res: Response) => {
         });
     });
   }
+};
+
+export const userRefreshToken = async (req: Request, res: Response) => {
+  const userToken: any = req["headers"]["authorization"]
+    ?.replace("Bearer", "")
+    .trim();
+  const getAccessToken = await useRefreshToken(userToken);
+  if (!getAccessToken) {
+    return res.status(500).json({
+      status: "error",
+      statusCode: 500,
+      error: "Token is not verified.",
+    });
+  }
+
+  return res.status(201).json({
+    status: "OK",
+    statusCode: 201,
+    token: getAccessToken,
+  });
 };

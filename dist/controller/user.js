@@ -12,12 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserDetail = exports.signUp = exports.signIn = void 0;
+exports.userRefreshToken = exports.getUserDetail = exports.signUp = exports.signIn = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const user_1 = require("../service/user");
 const user_2 = require("../models/user");
 const generateToken_1 = require("../utils/generateToken");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const refreshToken_1 = require("../utils/refreshToken");
 const signIn = (req, res) => {
     const { email, password } = req === null || req === void 0 ? void 0 : req.body;
     if (!email) {
@@ -139,3 +140,21 @@ const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getUserDetail = getUserDetail;
+const userRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    const userToken = (_b = req["headers"]["authorization"]) === null || _b === void 0 ? void 0 : _b.replace("Bearer", "").trim();
+    const getAccessToken = yield (0, refreshToken_1.useRefreshToken)(userToken);
+    if (!getAccessToken) {
+        return res.status(500).json({
+            status: "error",
+            statusCode: 500,
+            error: "Token is not verified.",
+        });
+    }
+    return res.status(201).json({
+        status: "OK",
+        statusCode: 201,
+        token: getAccessToken,
+    });
+});
+exports.userRefreshToken = userRefreshToken;
