@@ -124,7 +124,7 @@ export const getUserDetail = async (req: Request, res: Response) => {
   const accessTokenKey: any = process.env.ACCESSTOKENKEY;
   if(accessTokenKey){
     jwt.verify(userToken
-      ,accessTokenKey,(err:any,detail:any)=>{
+      ,accessTokenKey,async(err:any,detail:any) => {
         if (err) {
           return res.status(500).json({
             status: "error",
@@ -132,12 +132,14 @@ export const getUserDetail = async (req: Request, res: Response) => {
             err,
           });
         }
-
+        const response = await authUser
+          .findOne({ _id: detail?._id })
+          .select({ password: 0 });
         return res.status(200).json({
           status: "OK",
           statusCode: 200,
           message: "User detail get successfully.",
-          data: detail,
+          data: response,
         });
     });
   }
