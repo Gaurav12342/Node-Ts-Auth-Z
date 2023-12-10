@@ -6,6 +6,7 @@ import { RefreshToken } from "../models/refreshToken";
 import { generateToken } from "../utils/generateToken";
 import jwt from 'jsonwebtoken';
 import { useRefreshToken } from "../utils/refreshToken";
+import { request_get_auth_code_url } from "../utils/o-auth";
 
 export const signIn = (req: Request, res: Response) => {
   const { email, password } = req?.body;
@@ -164,3 +165,67 @@ export const userRefreshToken = async (req: Request, res: Response) => {
     token: getAccessToken,
   });
 };
+
+export const googleOAuth = async (req: Request, res: Response) => {
+  try {
+    const client_id = process.env.CLIENT_ID
+    const redirect_url = process.env.REDIRECT_URI
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${redirect_url}&response_type=code&scope=profile email`;
+    res.redirect (url);
+  } catch (error) {
+    res.sendStatus (500);
+    console.log (error);
+  }
+}
+
+export const googleAuthCallback =async (req: Request, res: Response)=>{
+  const { code } = req.query;
+
+  try {
+    // Exchange authorization code for access token
+    const requestObj: any ={
+      client_id: process.env.CLIENT_ID,
+      client_secret: process.env.CLIENT_SECRET,
+      code,
+      redirect_uri: process.env.REDIRECT_URI,
+      grant_type: 'authorization_code',
+    }
+    await fetch("https://oauth2.googleapis.com/token", {
+      method: "post",
+      body: requestObj,
+    })
+      .then(async(data: any) => await data.json())
+      .then(async (data: any) => {
+        
+        const { access_token, id_token } = data;
+        console.log("🚀 ~ file: user.ts:201 ~ .then ~ data:", data)
+
+        // Use access_token or id_token to fetch user profile
+        await fetch("https://www.googleapis.com/oauth2/v1/userinfo", {
+          method: "post",
+          headers: { Authorization: `Bearer ${access_token}` },
+        })
+          .then((profile: any) => profile.json())
+          .then((profile: any) => {
+            console.log("🚀 ~ file: user.ts:209 ~ .then ~ profile:", profile)
+            res.redirect("/");
+          })
+          .catch((error: any) => {
+            console.error("Error:", error);
+            res.redirect("http://localhost:3002/user/sign-in");
+          });
+      })
+      .catch();
+    // Code to handle user authentication and retrieval using the profile data
+
+    res.redirect('/');
+  } catch (error:any) {
+    console.error('Error:', error);
+    res.redirect('/user/sign-in');
+  }
+}
+
+// router.get('/auth/google', (req, res) => {
+//   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=profile email`;
+//   res.redirect(url);
+// });

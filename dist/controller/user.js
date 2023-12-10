@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userRefreshToken = exports.getUserDetail = exports.signUp = exports.signIn = void 0;
+exports.googleAuthCallback = exports.googleOAuth = exports.userRefreshToken = exports.getUserDetail = exports.signUp = exports.signIn = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const user_1 = require("../service/user");
 const user_2 = require("../models/user");
@@ -122,7 +122,7 @@ const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const userToken = (_a = req["headers"]["authorization"]) === null || _a === void 0 ? void 0 : _a.replace("Bearer", "").trim();
     const accessTokenKey = process.env.ACCESSTOKENKEY;
     if (accessTokenKey) {
-        jsonwebtoken_1.default.verify(userToken, accessTokenKey, (err, detail) => {
+        jsonwebtoken_1.default.verify(userToken, accessTokenKey, (err, detail) => __awaiter(void 0, void 0, void 0, function* () {
             if (err) {
                 return res.status(500).json({
                     status: "error",
@@ -130,13 +130,16 @@ const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                     err,
                 });
             }
+            const response = yield user_2.authUser
+                .findOne({ _id: detail === null || detail === void 0 ? void 0 : detail._id })
+                .select({ password: 0 });
             return res.status(200).json({
                 status: "OK",
                 statusCode: 200,
                 message: "User detail get successfully.",
-                data: detail,
+                data: response,
             });
-        });
+        }));
     }
 });
 exports.getUserDetail = getUserDetail;
@@ -158,3 +161,62 @@ const userRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, functio
     });
 });
 exports.userRefreshToken = userRefreshToken;
+const googleOAuth = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const client_id = process.env.CLIENT_ID;
+        const redirect_url = process.env.REDIRECT_URI;
+        const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${redirect_url}&response_type=code&scope=profile email`;
+        res.redirect(url);
+    }
+    catch (error) {
+        res.sendStatus(500);
+        console.log(error);
+    }
+});
+exports.googleOAuth = googleOAuth;
+const googleAuthCallback = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { code } = req.query;
+    try {
+        // Exchange authorization code for access token
+        const requestObj = {
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+            code,
+            redirect_uri: process.env.REDIRECT_URI,
+            grant_type: 'authorization_code',
+        };
+        yield fetch("<https://oauth2.googleapis.com/token>", {
+            method: "post",
+            body: requestObj,
+        })
+            .then((data) => data.json())
+            .then((data) => __awaiter(void 0, void 0, void 0, function* () {
+            const { access_token, id_token } = data;
+            // Use access_token or id_token to fetch user profile
+            yield fetch("<https://www.googleapis.com/oauth2/v1/userinfo>", {
+                method: "post",
+                headers: { Authorization: `Bearer ${access_token}` },
+            })
+                .then((profile) => profile.json())
+                .then((profile) => {
+                res.redirect("/");
+            })
+                .catch((error) => {
+                console.error("Error:", error.response.data.error);
+                res.redirect("/user/sign-in");
+            });
+        }))
+            .catch();
+        // Code to handle user authentication and retrieval using the profile data
+        res.redirect('/');
+    }
+    catch (error) {
+        console.error('Error:', error.response.data.error);
+        res.redirect('/user/sign-in');
+    }
+});
+exports.googleAuthCallback = googleAuthCallback;
+// router.get('/auth/google', (req, res) => {
+//   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=profile email`;
+//   res.redirect(url);
+// });
